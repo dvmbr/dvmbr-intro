@@ -1,7 +1,10 @@
 import "./style.css";
+
 class DvmbrIntro extends HTMLElement {
   shadow: ShadowRoot;
   private _text: string = "DVMBR";
+  private _hasRendered = false;
+  private _loadHandler?: () => void;
 
   constructor() {
     super();
@@ -10,6 +13,47 @@ class DvmbrIntro extends HTMLElement {
 
   static get observedAttributes() {
     return ["text"];
+  }
+
+  connectedCallback() {
+    this._text = this.getAttribute("text") || "DVMBR";
+
+    const start = () => {
+      if (this._hasRendered) return;
+      this._hasRendered = true;
+      this.renderIntro();
+    };
+
+    if (document.readyState === "complete") {
+      start();
+      return;
+    }
+
+    this._loadHandler = start;
+    window.addEventListener("load", this._loadHandler, { once: true });
+  }
+
+  disconnectedCallback() {
+    if (this._loadHandler) {
+      window.removeEventListener("load", this._loadHandler);
+      this._loadHandler = undefined;
+    }
+  }
+
+  attributeChangedCallback(
+    name: string,
+    oldValue: string | null,
+    newValue: string | null,
+  ) {
+    if (name !== "text" || oldValue === newValue) return;
+
+    this._text = newValue || "DVMBR";
+
+    // 초기 연결/초기 파싱 단계에서는 다시 렌더하지 않음
+    if (!this._hasRendered) return;
+
+    sessionStorage.removeItem("dvmbr_intro_seen");
+    this.renderIntro();
   }
 
   private initIntro() {
@@ -31,9 +75,9 @@ class DvmbrIntro extends HTMLElement {
     if (!shouldShowIntro) {
       introWrapper?.classList.add("hidden");
       return;
-    } else {
-      sessionStorage.setItem(INTRO_KEY, now.toString());
     }
+
+    sessionStorage.setItem(INTRO_KEY, now.toString());
 
     document.body.style.overflow = "hidden";
 
@@ -124,15 +168,12 @@ class DvmbrIntro extends HTMLElement {
       </style>
 
       <div id="intro-wrapper">
-        <section
-          id="intro"
-          class="flex h-dvh w-dvw items-center justify-center"
-        >
+        <section id="intro">
           <div class="intro-word" aria-label="${text}">
             ${[...text]
               .map(
                 (c, i) =>
-                  `<span class="intro-char" style="animation-delay:${(i * 0.08).toFixed(2)}s">${c}</span>`,
+                  `<span class="intro-char" style="animation-delay:${(i * 0.08).toFixed(2)}s">${c.toUpperCase()}</span>`,
               )
               .join("")}
           </div>
@@ -142,41 +183,7 @@ class DvmbrIntro extends HTMLElement {
 
     this.initIntro();
   }
-
-  connectedCallback() {
-    this._text = this.getAttribute("text") || "DVMBR";
-
-    if (document.readyState === "complete") {
-      this.renderIntro();
-      return;
-    }
-
-    window.addEventListener("load", () => this.renderIntro(), { once: true });
-  }
-
-  attributeChangedCallback(
-    name: string,
-    oldValue: string | null,
-    newValue: string | null,
-  ) {
-    if (name === "text" && oldValue !== newValue) {
-      this._text = newValue || "DVMBR";
-
-      if (!this.isConnected) return;
-
-      sessionStorage.removeItem("dvmbr_intro_seen");
-      this.renderIntro();
-    }
-  }
 }
-
-//   disconnectedCallback() {
-//     // clean up if needed
-//   }
-
-//   attributeChangedCallback() {
-//     // handle attribute changes if needed
-//   }
 
 export function defineDvmbrIntro() {
   if (!customElements.get("dvmbr-intro")) {
