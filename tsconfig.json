@@ -10,7 +10,8 @@
     "strict": true,
     "skipLibCheck": true,
     "isolatedModules": true,
-    "useDefineForClassFields": true
+    "useDefineForClassFields": true,
+    "types": ["node"]
   },
   "include": ["src"]
 }

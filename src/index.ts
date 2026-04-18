@@ -1,3 +1,3 @@
-import { defineDvmbrIntro } from "./dvmbr-intro.js";
+import { defineDvmbrIntro } from "./dvmbr-intro";
 
 defineDvmbrIntro();
